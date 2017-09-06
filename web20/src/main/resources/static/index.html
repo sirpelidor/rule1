@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="stickerPriceApp">
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sticker Price Calculator</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="css/angular-auto-complete.css">
+    <link rel="stylesheet" type="text/css" href="css/ng-modal.css">
+    <link rel="stylesheet" type="text/css" href="css/chartTableStyle.css">
+    <style>
+        .nopadding {
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+    </style>
+    <script src="js/jquery.js"></script>
+    <script src="js/angular.js"></script>
+    <script src="js/underscore.js"></script>
+    <script src="js/angular-sanitize.js"></script>
+    <script src="js/highcharts.js"></script>
+    <script src="js/angular-auto-complete.js"></script>
+    <script src="js/chart.js"></script>
+    <script src="js/ng-modal.js"></script>
+    <script src="js/app.js"></script>
+</head>
+
+<body ng-controller="MainCtrl">
+    <div class="container" style="margin-top: 20px">
+        <div class="row">
+            <div class="col-xs-8 .col-md-8">
+                <div id="autocomplete" class="col-xs-10 col-md-10 nopadding">
+                    <input type="text" id="txt_ticker" ng-model="ticker" placeholder="Ticker Symbol" auto-complete="autoCompleteOptions" style="width: 100%" autofocus />
+                </div>
+                <div class="col-xs-2 col-md-2 nopadding">
+                    <button ng-click="myClick()" ng-disabled="clickable" class="btn btn-success">research...</button>
+                </div>
+            </div>
+
+            <div class="col-xs-4 col-md-4 nopadding">
+                <div ng-show="showCurrentPrice" class="row">
+                    <div class="col-xs-6 text-right" >Current Price:</div>
+                    <div class="col-xs-6 text-left" >{{currentPrice}}</div>
+                </div>
+                <div ng-show="showStickerPrice" class="row">
+                    <div class="col-xs-6 text-right">
+                        <a ng-click="toggleModal()" title="see calculation detail"><span class="glyphicon glyphicon-list-alt"></span></a> Sticker Price:
+                    </div>
+                    <div class="col-xs-6 text-left" >{{stickerPrice}}</div>
+                </div>
+            </div>
+        </div> <!-- top -->
+
+        <div class="row" style="margin-top: 30px">
+            <div class="col-xs-6">
+                <chart title="Big4 Growth Rate" xData="lineChartXData" yData="lineChartYData" xName="Year" yName="Growth Rate Percent" subtitle=""></chart>
+            </div>
+            <div class="col-xs-6">
+                <chart title="ROIC" xData="lineChartXData2" yData="lineChartYData2" xName="Year" yName="Percent" subtitle=""></chart>
+            </div>
+        </div> <!-- middle -->
+
+        <div class="row">
+            <div class="col-sm-12 text-center">
+                <a ng-click="toggleTable()" ng-show="showTableLink">{{showTableLabel}}</a>
+            </div>
+            <table class="table table-hove  rtable" ng-show="showTable">
+                <thead>
+                    <tr>
+                        <th ng-repeat="year in historicalYear">{{year}}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>EPS</td>
+                        <td ng-repeat="eps in historicalEps track by $index">{{eps}}</td>
+                    </tr>
+                    <tr>
+                        <td>Equity</td>
+                        <td ng-repeat="equity in historicalEquity track by $index">{{equity}}</td>
+                    </tr>
+                    <tr>
+                        <td>Sales</td>
+                        <td ng-repeat="sales in historicalSales track by $index">{{sales}}</td>
+                    </tr>
+                    <tr>
+                        <td>Cashflow</td>
+                        <td ng-repeat="cashflow in historicalCashflow track by $index">{{cashflow}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div> <!-- bottom -->
+
+    </div><!-- container -->
+
+    <modal-dialog show='dialogShown' dialog-title='Margin of Safety: {{mos}}' height='400px' width='75%'>
+        <table class="table table-hove  rtable">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Guess/Default</th>
+                    <th>From Prof/Historical</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Current EPS</td>
+                    <td colspan="2" style="padding-left: 20%">{{currentEps}}</td>
+                </tr>
+                <tr>
+                    <td>EPS Growth Rate</td>
+                    <td>{{guessEpsGrowthRate}}<span ng-show="showGuessEpsGrowthRate" class="glyphicon glyphicon-ok col-xs-offset-2"></span></td>
+                    <td>{{profEpsGrowthRate}}<span ng-show="showprofEpsGrowthRate" class="glyphicon glyphicon-ok col-xs-offset-2"></span></td>
+                </tr>
+                <tr>
+                    <td>PE</td>
+                    <td>{{defaultPe}}<span ng-show="showDefaultPe" class="glyphicon glyphicon-ok col-xs-offset-2"></span></td>
+                    <td>{{historicalPeAvg}}<span ng-show="showHistoricalPeAvg" class="glyphicon glyphicon-ok col-xs-offset-2"></span></td>
+                </tr>
+            </tbody>
+        </table>
+    </modal-dialog>
+    <modal-dialog show='true' dialog-title='Disclaimer' height='400px' width='75%'>
+        <div>
+            <p>
+                This free tool does not assoicate or represent Phi Town's Rule One Investing.
+            </p>
+            <p>
+                The developer created this tool out of personal hobby and was inspired by the book: Rule #1.
+            </p>
+            <p>
+                Further more, this tool does not guarantee the accuracy of the calculation and the info it collects; it may not even work on certain stocks.
+            </p>
+            <p>
+                Please do not base your investment decision solely on this tool and furthermore... use it at your own risk.
+            </p>
+        </div>
+    </modal-dialog>
+</body>
+
+</html>
